@@ -1,0 +1,27 @@
+[project]
+name = "search-orchestrator"
+version = "0.1.0"
+requires-python = ">=3.12"
+
+dependencies = [
+    "httpx",
+    "beautifulsoup4",
+    "pyyaml",
+    "redis",
+    "fastapi",
+    "uvicorn",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "pytest-asyncio",
+]
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["adapters*", "normalizer*", "ranker*", "cache*", "api*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]

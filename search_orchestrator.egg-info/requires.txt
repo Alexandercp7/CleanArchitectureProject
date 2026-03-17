@@ -1,0 +1,11 @@
+httpx
+beautifulsoup4
+pyyaml
+redis
+fastapi
+uvicorn
+
+[dev]
+pytest
+pytest-cov
+pytest-asyncio
