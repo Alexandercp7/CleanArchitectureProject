@@ -12,6 +12,7 @@ MAPPING = {
     "msi_months": "msi_months",
     "in_stock": "in_stock",
     "delivery_days": "delivery_days",
+    "url": "url",
 }
 
 
@@ -117,3 +118,13 @@ def test_maps_url_from_source_id():
     )
     product = normalizer.normalize_to_product(raw, "mercadolibre")
     assert product.url == "https://articulo.mercadolibre.com.mx/MLM-12345"
+
+
+def test_maps_url_from_mapped_field_when_available():
+    normalizer = make_normalizer(MAPPING)
+    raw = RawProduct(
+        source_id="https://fallback.example/item",
+        fields={"title": "Laptop", "cash_price": "999", "url": "https://mapped.example/item"},
+    )
+    product = normalizer.normalize_to_product(raw, "mercadolibre")
+    assert product.url == "https://mapped.example/item"

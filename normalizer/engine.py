@@ -21,7 +21,7 @@ class Normalizer:
             msi_months=self._extract_msi_months(fields, field_map),
             in_stock=self._extract_in_stock(fields, field_map),
             delivery_days=self._extract_delivery_days(fields, field_map),
-            url=raw.source_id,
+            url=self._extract_url(fields, field_map, raw.source_id),
         )
 
     def _extract_title(self, fields: dict, field_map: dict) -> str:
@@ -78,3 +78,11 @@ class Normalizer:
             return int(fields[key])
         except (ValueError, TypeError):
             return None
+
+    def _extract_url(self, fields: dict, field_map: dict, source_id: str) -> str:
+        key = field_map.get("url")
+        if key and key in fields:
+            value = str(fields[key]).strip()
+            if value:
+                return value
+        return source_id
