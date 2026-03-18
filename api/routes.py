@@ -1,4 +1,4 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from pydantic import BaseModel
 from orchestrator import SearchOrchestrator, SearchRequest
 
@@ -33,13 +33,14 @@ def create_router(orchestrator: SearchOrchestrator) -> FastAPI:
         return {"status": "ok"}
 
     @app.post("/search", response_model=list[ProductResponse])
-    def search(body: SearchRequestBody):
+    def search(body: SearchRequestBody, response: Response):
         if not body.query.strip():
             raise HTTPException(status_code=400, detail="Query cannot be empty")
 
-        results = orchestrator.search_and_rank(
+        results, from_cache = orchestrator.search_and_rank_with_cache_status(
             SearchRequest(query=body.query, weights=body.weights)
         )
+        response.headers["X-Cache"] = "HIT" if from_cache else "MISS"
         return [ProductResponse(**vars(p)) for p in results]
 
     return app

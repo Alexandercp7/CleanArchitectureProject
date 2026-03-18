@@ -1,6 +1,7 @@
 import httpx
 from pathlib import Path
 
+from adapters.amazon_scraper_adapter import AmazonScraperAdapter
 from adapters.mercadolibre_scraper_adapter import MercadoLibreScraperAdapter
 from normalizer.engine import Normalizer
 from normalizer.yaml_mapping_loader import YamlMappingLoader
@@ -24,6 +25,9 @@ class InMemoryCache(AbstractCache):
 
 orchestrator = SearchOrchestrator(
     adapters=[
+        AmazonScraperAdapter(
+            http_client=httpx.Client(timeout=10.0, follow_redirects=True)
+        ),
         MercadoLibreScraperAdapter(
             http_client=httpx.Client(timeout=10.0, follow_redirects=True)
         ),

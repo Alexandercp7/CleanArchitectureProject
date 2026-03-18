@@ -30,17 +30,21 @@ class SearchOrchestrator:
         self._cache = cache
 
     def search_and_rank(self, request: SearchRequest) -> list[Product]:
+        ranked, _ = self.search_and_rank_with_cache_status(request)
+        return ranked
+
+    def search_and_rank_with_cache_status(self, request: SearchRequest) -> tuple[list[Product], bool]:
         cache_key = build_cache_key(request.query, request.weights)
 
         cached = self._cache.get(cache_key)
         if cached is not None:
-            return cached
+            return cached, True
 
         products = self._collect_products(request.query)
         ranked = self._ranker.score_all(products, request.weights)
 
         self._cache.set(cache_key, ranked, DEFAULT_CACHE_TTL)
-        return ranked
+        return ranked, False
 
     def _collect_products(self, query: str) -> list[Product]:
         products = []

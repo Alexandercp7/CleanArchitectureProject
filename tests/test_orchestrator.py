@@ -104,3 +104,27 @@ def test_returns_ranked_products_after_cache_miss():
     )
 
     assert result[0].title == "Best laptop"
+
+
+def test_returns_cache_hit_status_when_result_comes_from_cache():
+    product = make_product(title="Cached laptop")
+    orchestrator = make_orchestrator([product], cache_hit=True)
+
+    result, from_cache = orchestrator.search_and_rank_with_cache_status(
+        SearchRequest(query="laptop", weights={"price": 1.0})
+    )
+
+    assert from_cache is True
+    assert result[0].title == "Cached laptop"
+
+
+def test_returns_cache_miss_status_when_result_comes_from_web():
+    product = make_product(title="Web laptop")
+    orchestrator = make_orchestrator([product], cache_hit=False)
+
+    result, from_cache = orchestrator.search_and_rank_with_cache_status(
+        SearchRequest(query="laptop", weights={"price": 1.0})
+    )
+
+    assert from_cache is False
+    assert result[0].title == "Web laptop"
