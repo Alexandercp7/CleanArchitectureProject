@@ -1,4 +1,3 @@
-import hashlib
 import json
 import redis
 from dataclasses import asdict
@@ -21,8 +20,3 @@ class RedisCache(AbstractCache):
 
     def set(self, key: str, value: list[Product], ttl_seconds: int = DEFAULT_TTL) -> None:
         self._client.setex(key, ttl_seconds, json.dumps([asdict(p) for p in value]))
-
-
-def build_cache_key(query: str, weights: dict[str, float]) -> str:
-    payload = json.dumps({"query": query, "weights": weights}, sort_keys=True)
-    return hashlib.sha256(payload.encode()).hexdigest()

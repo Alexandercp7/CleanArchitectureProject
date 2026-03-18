@@ -1,5 +1,4 @@
 from unittest.mock import MagicMock
-from dataclasses import asdict
 from adapters.base import StoreAdapter, RawProduct
 from normalizer.engine import Normalizer
 from ranker.strategy import RankStrategy
@@ -11,10 +10,13 @@ from orchestrator import SearchOrchestrator, SearchRequest
 def make_product(**overrides) -> Product:
     defaults = dict(
         title="Laptop",
-        price=1000.0,
+        cash_price=1000.0,
+        installment_price=None,
+        months_without_interest=False,
+        msi_months=None,
         in_stock=True,
-        delivery_days=5,
-        source="mercadolibre",
+        delivery_days=None,
+        url="https://example.com/product",
     )
     return Product(**{**defaults, **overrides})
 
@@ -24,8 +26,9 @@ def make_orchestrator(
     cache_hit: bool = False,
 ) -> SearchOrchestrator:
     adapter = MagicMock(spec=StoreAdapter)
+    adapter.source_name = "mercadolibrescraperadapter"
     adapter.fetch_raw_products.return_value = [
-        RawProduct(source_id="1", fields={"title": "Laptop", "price": "1000"})
+        RawProduct(source_id="1", fields={"title": "Laptop", "cash_price": "1000"})
     ]
 
     normalizer = MagicMock(spec=Normalizer)
@@ -91,8 +94,8 @@ def test_stores_results_in_cache_after_miss():
 
 def test_returns_ranked_products_after_cache_miss():
     products = [
-        make_product(title="Best laptop", price=500.0),
-        make_product(title="Worst laptop", price=9000.0),
+        make_product(title="Best laptop", cash_price=500.0),
+        make_product(title="Worst laptop", cash_price=9000.0),
     ]
     orchestrator = make_orchestrator(products, cache_hit=False)
 

@@ -11,6 +11,11 @@ class RawProduct:
 
 class StoreAdapter(ABC):
 
+    @property
+    @abstractmethod
+    def source_name(self) -> str:
+        ...
+
     @abstractmethod
     def fetch_raw_products(self, query: str) -> list[RawProduct]:
         ...

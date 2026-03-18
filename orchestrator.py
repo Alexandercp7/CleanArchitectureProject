@@ -3,7 +3,7 @@ from adapters.base import StoreAdapter
 from normalizer.engine import Normalizer
 from ranker.strategy import RankStrategy
 from cache.abstract_cache import AbstractCache
-from cache.redis_cache import build_cache_key
+from cache.key_builder import build_cache_key
 from domain.product import Product
 
 DEFAULT_CACHE_TTL = 300
@@ -45,7 +45,7 @@ class SearchOrchestrator:
     def _collect_products(self, query: str) -> list[Product]:
         products = []
         for adapter in self._adapters:
-            source_name = type(adapter).__name__.lower()
+            source_name = adapter.source_name
             raw_items = adapter.fetch_raw_products(query)
             for raw in raw_items:
                 products.append(

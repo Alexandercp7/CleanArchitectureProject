@@ -5,7 +5,10 @@ from dataclasses import dataclass
 @dataclass(frozen=True)
 class Product:
     title: str
-    price: float
+    cash_price: float
+    installment_price: float | None
+    months_without_interest: bool
+    msi_months: int | None
     in_stock: bool
     delivery_days: int | None
-    source: str
+    url: str

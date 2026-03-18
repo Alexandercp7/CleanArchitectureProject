@@ -1,4 +1,7 @@
 title: title
-price: price
+cash_price: cash_price
+installment_price: installment_price
+months_without_interest: months_without_interest
+msi_months: msi_months
 in_stock: in_stock
 delivery_days: delivery_days

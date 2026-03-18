@@ -3,16 +3,20 @@ from dataclasses import asdict
 import json
 import redis
 from domain.product import Product
-from cache.redis_cache import RedisCache, build_cache_key
+from cache.redis_cache import RedisCache
+from cache.key_builder import build_cache_key
 
 
 def make_product(**overrides) -> Product:
     defaults = dict(
         title="Laptop",
-        price=1000.0,
+        cash_price=1000.0,
+        installment_price=None,
+        months_without_interest=False,
+        msi_months=None,
         in_stock=True,
-        delivery_days=5,
-        source="mercadolibre",
+        delivery_days=None,
+        url="https://example.com/product",
     )
     return Product(**{**defaults, **overrides})
 
@@ -55,8 +59,8 @@ def test_stores_products_with_ttl():
 
 
 def test_same_query_and_weights_produce_same_cache_key():
-    key1 = build_cache_key("laptop", {"price": 0.6, "availability": 0.4})
-    key2 = build_cache_key("laptop", {"price": 0.6, "availability": 0.4})
+    key1 = build_cache_key("laptop", {"price": 0.6, "in_stock": 0.4})
+    key2 = build_cache_key("laptop", {"price": 0.6, "in_stock": 0.4})
 
     assert key1 == key2
 
