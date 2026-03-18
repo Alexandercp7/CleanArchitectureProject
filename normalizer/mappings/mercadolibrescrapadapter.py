@@ -1,0 +1,4 @@
+title: title
+price: price
+in_stock: in_stock
+delivery_days: delivery_days

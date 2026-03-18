@@ -21,7 +21,7 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["adapters*", "normalizer*", "ranker*", "cache*", "api*"]
+include = ["adapters*", "normalizer*", "ranker*", "cache*", "api*", "domain*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
