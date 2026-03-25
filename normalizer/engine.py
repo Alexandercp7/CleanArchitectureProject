@@ -1,5 +1,5 @@
 from adapters.base import RawProduct
-from domain.product import Product
+from domain.product.product import Product
 from normalizer.mapping_loader import MappingLoader
 
 NOT_SPECIFIED = "Not specified"

@@ -4,7 +4,7 @@ from normalizer.engine import Normalizer
 from ranker.strategy import RankStrategy
 from cache.abstract_cache import AbstractCache
 from cache.key_builder import build_cache_key
-from domain.product import Product
+from domain.product.product import Product
 
 DEFAULT_CACHE_TTL = 300
 

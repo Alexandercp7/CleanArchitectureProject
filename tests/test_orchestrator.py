@@ -3,7 +3,7 @@ from adapters.base import StoreAdapter, RawProduct
 from normalizer.engine import Normalizer
 from ranker.strategy import RankStrategy
 from cache.abstract_cache import AbstractCache
-from domain.product import Product
+from domain.product.product import Product
 from orchestrator import SearchOrchestrator, SearchRequest
 
 

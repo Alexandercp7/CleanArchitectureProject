@@ -1,4 +1,4 @@
-from domain.product import Product
+from domain.product.product import Product
 from ranker.strategy import RankStrategy
 
 

@@ -1,7 +1,7 @@
 import json
 import redis
 from dataclasses import asdict
-from domain.product import Product
+from domain.product.product import Product
 from cache.abstract_cache import AbstractCache
 
 DEFAULT_TTL = 300

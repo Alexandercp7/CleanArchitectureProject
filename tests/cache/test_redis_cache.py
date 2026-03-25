@@ -2,7 +2,7 @@ from unittest.mock import MagicMock
 from dataclasses import asdict
 import json
 import redis
-from domain.product import Product
+from domain.product.product import Product
 from cache.redis_cache import RedisCache
 from cache.key_builder import build_cache_key
 

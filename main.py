@@ -7,7 +7,7 @@ from normalizer.engine import Normalizer
 from normalizer.yaml_mapping_loader import YamlMappingLoader
 from ranker.weighted_scorer import WeightedScorer
 from cache.abstract_cache import AbstractCache
-from domain.product import Product
+from domain.product.product import Product
 from orchestrator import SearchOrchestrator
 from api.routes import create_router
 
