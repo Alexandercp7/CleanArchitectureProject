@@ -152,53 +152,73 @@ POST /search
 
 ## 🏗️ Arquitectura
 
-### Flujo de búsqueda
+### Arquitectura Hexagonal (Ports and Adapters)
 
+El proyecto implementa una arquitectura hexagonal: el caso de uso central vive en el orquestador y se conecta a puertos (interfaces) con adaptadores intercambiables.
+
+### Vista por capas
+
+- **Entrada (API)**: recibe la request HTTP, valida y transforma payloads.
+- **Núcleo de aplicación (Orquestación)**: coordina caché, extracción, normalización y ranking.
+- **Integración (Adapters)**: obtiene datos crudos de cada marketplace.
+- **Dominio**: modelo unificado de producto (`Product`).
+- **Infraestructura transversal**: caché y mappings YAML.
+
+```text
+api/routes.py
+   -> orchestrator.py (SearchOrchestrator)
+    -> cache/*
+    -> adapters/*
+    -> normalizer/*
+    -> ranker/*
+    -> domain/product/product.py
 ```
-SearchRequest
-    ↓
-Verificar Caché → Si HIT: retornar resultados
-    ↓ (MISS)
-Buscar en Adaptadores (concurrente)
-    ↓
-Normalizar datos
-    ↓
-Rankear según pesos
-    ↓
-Guardar en Caché
-    ↓
-Retornar resultados
+
+### Flujo de una búsqueda
+
+```mermaid
+flowchart TD
+  A[POST /search] --> B[Validar request]
+  B --> C[SearchOrchestrator.search_and_rank_with_cache_status]
+  C --> D{Cache HIT?}
+  D -->|Si| E[Retornar productos cacheados]
+  D -->|No| F[fetch_raw_products en cada adapter]
+  F --> G[Normalizer: raw -> Product]
+  G --> H[WeightedScorer.score_all]
+  H --> I[Guardar en cache con TTL]
+  I --> J[Retornar ranking]
+  E --> K[Header X-Cache: HIT]
+  J --> L[Header X-Cache: MISS]
 ```
+
+### Contratos e implementaciones
+
+- **Contrato de adapters**: `StoreAdapter` define `source_name` y `fetch_raw_products(query)`.
+- **Contrato de caché**: `AbstractCache` define `get` y `set`.
+- **Estrategia de ranking**: `RankStrategy` permite intercambiar algoritmos.
+- **Normalización configurable**: `YamlMappingLoader` carga mappings por fuente para evitar hardcode.
+
+### Mapeo Hexagonal (Puertos y Adaptadores)
+
+- **Puerto de entrada**: API FastAPI en `api/routes.py` (recibe `POST /search`).
+- **Caso de uso central**: `SearchOrchestrator` en `orchestrator.py`.
+- **Puertos de salida**: contratos `StoreAdapter`, `AbstractCache`, `RankStrategy`.
+- **Adaptadores de salida**: `AmazonScraperAdapter`, `MercadoLibreScraperAdapter`, `InMemoryCache`, `RedisCache`, `WeightedScorer`, `YamlMappingLoader`.
 
 ### Componentes principales
 
-#### SearchOrchestrator
-Orquestador central que:
-- Gestiona adaptadores
-- Coordina normalización
-- Ejecuta ranking
-- Maneja caché
+- **SearchOrchestrator**: punto único de coordinación del caso de uso de búsqueda.
+- **Adapters** (`AmazonScraperAdapter`, `MercadoLibreScraperAdapter`): traducen HTML/API externa a `RawProduct`.
+- **Normalizer**: aplica mappings y genera `Product` consistente.
+- **WeightedScorer**: calcula score por criterios y ordena resultados.
+- **Cache** (`InMemoryCache`, `RedisCache`): evita scraping repetido y reduce latencia.
 
-#### Adaptadores
-Conectores a diferentes plataformas:
-- `AmazonScraperAdapter`: Extrae de Amazon
-- `MercadoLibreScraperAdapter`: Extrae de MercadoLibre
-- Implementan interfaz `StoreAdapter`
+### Decisiones de diseño
 
-#### Normalizer
-Convierte datos heterogéneos a formato uniforme usando:
-- Mappings YAML configurables
-- Transformaciones automáticas
-
-#### Ranker
-Sistema de scoring ponderado:
-- `WeightedScorer`: implementación con pesos personalizables
-- Soporta múltiples criterios (precio, interés, disponibilidad, etc.)
-
-#### Cache
-Almacenamiento de resultados:
-- `InMemoryCache`: implemen en memoria (desarrollo)
-- `RedisCache`: implementación con Redis (producción)
+- **Separación fuerte de responsabilidades** para facilitar pruebas unitarias por módulo.
+- **Extensión por contrato**: nuevos marketplaces se agregan implementando `StoreAdapter`.
+- **Config-driven normalization**: cambios de estructura de fuentes se atienden en YAML sin tocar lógica de dominio.
+- **Estrategia de ranking pluggable** para experimentar con distintos modelos de score.
 
 ## 🧪 Pruebas
 
