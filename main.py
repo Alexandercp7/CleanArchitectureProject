@@ -7,6 +7,7 @@ from pathlib import Path
 import httpx
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from redis import Redis
 from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async_engine
 
@@ -135,6 +136,7 @@ async def lifespan(app: FastAPI):
 def create_app() -> FastAPI:
     settings = AppConfig()
     app = FastAPI(title="Search Orchestrator API", lifespan=lifespan)
+    app.mount("/web", StaticFiles(directory="web"), name="web")
     app.add_middleware(
         CORSMiddleware,
         allow_origins=list(settings.cors.allow_origins),

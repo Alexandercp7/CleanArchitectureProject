@@ -1,0 +1,344 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Endpoint Tester</title>
+  <style>
+    :root {
+      --bg: #f3f6fb;
+      --card: #ffffff;
+      --text: #1a2433;
+      --muted: #5a6b84;
+      --primary: #0f4c81;
+      --primary-2: #1666ad;
+      --ok: #0f766e;
+      --error: #b42318;
+      --border: #d6e0ee;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      color: var(--text);
+      background: radial-gradient(circle at top right, #dbeafe, var(--bg));
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+    }
+
+    .subtitle {
+      margin: 0 0 24px;
+      color: var(--muted);
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+      gap: 16px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      box-shadow: 0 4px 14px rgba(15, 76, 129, 0.08);
+    }
+
+    .card h2 {
+      margin: 0 0 12px;
+      font-size: 18px;
+    }
+
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    label {
+      display: block;
+      margin: 8px 0 4px;
+      font-size: 13px;
+      color: var(--muted);
+    }
+
+    input, select, textarea, button {
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      padding: 10px;
+      font-size: 14px;
+      background: #fff;
+    }
+
+    textarea {
+      min-height: 96px;
+      resize: vertical;
+      font-family: Consolas, "Courier New", monospace;
+    }
+
+    button {
+      background: linear-gradient(90deg, var(--primary), var(--primary-2));
+      color: #fff;
+      border: 0;
+      cursor: pointer;
+      margin-top: 10px;
+      font-weight: 600;
+    }
+
+    button:hover { filter: brightness(1.06); }
+
+    .token-box {
+      font-size: 12px;
+      color: var(--muted);
+      word-break: break-all;
+      background: #f7fbff;
+      border: 1px dashed var(--border);
+      padding: 8px;
+      border-radius: 8px;
+      margin-top: 8px;
+    }
+
+    .log {
+      margin-top: 16px;
+      background: #0b1e33;
+      color: #d5e3f3;
+      border-radius: 12px;
+      padding: 12px;
+      min-height: 220px;
+      white-space: pre-wrap;
+      font-family: Consolas, "Courier New", monospace;
+      font-size: 12px;
+      overflow: auto;
+    }
+
+    .status-ok { color: #59d49b; }
+    .status-error { color: #ff8b8b; }
+
+    .small { font-size: 12px; color: var(--muted); margin-top: 6px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Search Orchestrator - Endpoint Tester</h1>
+    <p class="subtitle">Frontend basico para probar /health, /search, /auth y /alerts.</p>
+
+    <div class="grid">
+      <section class="card">
+        <h2>Health</h2>
+        <button id="btnHealth">GET /health</button>
+      </section>
+
+      <section class="card">
+        <h2>Search</h2>
+        <label>Query</label>
+        <input id="searchQuery" value="laptop" />
+        <div class="row">
+          <div>
+            <label>Weight price</label>
+            <input id="wPrice" type="number" min="0" max="1" step="0.1" value="0.6" />
+          </div>
+          <div>
+            <label>Weight in_stock</label>
+            <input id="wStock" type="number" min="0" max="1" step="0.1" value="0.2" />
+          </div>
+          <div>
+            <label>Weight MSI</label>
+            <input id="wMsi" type="number" min="0" max="1" step="0.1" value="0.2" />
+          </div>
+          <div>
+            <label>Weight delivery_days</label>
+            <input id="wDelivery" type="number" min="0" max="1" step="0.1" value="0.0" />
+          </div>
+        </div>
+        <button id="btnSearch">POST /search</button>
+      </section>
+
+      <section class="card">
+        <h2>Auth</h2>
+        <label>Email</label>
+        <input id="authEmail" value="test@example.com" />
+        <label>Password</label>
+        <input id="authPassword" value="Password123" type="password" />
+        <button id="btnRegister">POST /auth/register</button>
+        <button id="btnLogin">POST /auth/login</button>
+        <button id="btnRefresh">POST /auth/refresh</button>
+        <div class="token-box" id="tokenInfo">Sin tokens</div>
+      </section>
+
+      <section class="card">
+        <h2>Alerts (requiere token)</h2>
+        <label>Query</label>
+        <input id="alertQuery" value="iphone" />
+        <div class="row">
+          <div>
+            <label>Condition</label>
+            <select id="alertCondition">
+              <option value="PRICE_BELOW">PRICE_BELOW</option>
+              <option value="IN_STOCK">IN_STOCK</option>
+            </select>
+          </div>
+          <div>
+            <label>Interval minutes</label>
+            <input id="alertInterval" type="number" min="1" value="30" />
+          </div>
+          <div>
+            <label>Threshold (solo PRICE_BELOW)</label>
+            <input id="alertThreshold" type="number" value="18000" />
+          </div>
+        </div>
+        <button id="btnCreateAlert">POST /alerts</button>
+        <button id="btnListAlerts">GET /alerts</button>
+        <label>Alert ID para borrar</label>
+        <input id="alertIdDelete" placeholder="pega aqui el id" />
+        <button id="btnDeleteAlert">DELETE /alerts/{id}</button>
+      </section>
+    </div>
+
+    <div class="small">Tip: tambien puedes usar Swagger en <a href="/docs" target="_blank">/docs</a>.</div>
+    <div class="log" id="log"></div>
+  </div>
+
+  <script>
+    const logBox = document.getElementById("log");
+
+    let accessToken = localStorage.getItem("access_token") || "";
+    let refreshToken = localStorage.getItem("refresh_token") || "";
+
+    function updateTokenInfo() {
+      const box = document.getElementById("tokenInfo");
+      box.textContent = accessToken
+        ? `Access: ${accessToken.slice(0, 24)}... | Refresh: ${refreshToken ? refreshToken.slice(0, 24) + "..." : "N/A"}`
+        : "Sin tokens";
+    }
+
+    function writeLog(title, status, payload) {
+      const time = new Date().toLocaleTimeString();
+      const statusClass = status >= 200 && status < 300 ? "status-ok" : "status-error";
+      const line = `[${time}] ${title} -> <span class="${statusClass}">${status}</span>\n${JSON.stringify(payload, null, 2)}\n\n`;
+      logBox.innerHTML = line + logBox.innerHTML;
+    }
+
+    async function apiCall(title, path, options = {}) {
+      const headers = { "Content-Type": "application/json", ...(options.headers || {}) };
+      if (options.auth && accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
+      }
+
+      const res = await fetch(path, {
+        method: options.method || "GET",
+        headers,
+        body: options.body ? JSON.stringify(options.body) : undefined,
+      });
+
+      let payload;
+      try {
+        payload = await res.json();
+      } catch (_error) {
+        payload = { detail: "No JSON body", text: await res.text().catch(() => "") };
+      }
+
+      if (res.headers.get("X-Cache")) {
+        payload.__x_cache = res.headers.get("X-Cache");
+      }
+
+      writeLog(title, res.status, payload);
+      return { res, payload };
+    }
+
+    document.getElementById("btnHealth").onclick = () => apiCall("GET /health", "/health");
+
+    document.getElementById("btnSearch").onclick = () => {
+      const body = {
+        query: document.getElementById("searchQuery").value,
+        weights: {
+          price: Number(document.getElementById("wPrice").value),
+          in_stock: Number(document.getElementById("wStock").value),
+          months_without_interest: Number(document.getElementById("wMsi").value),
+          delivery_days: Number(document.getElementById("wDelivery").value),
+        },
+      };
+      apiCall("POST /search", "/search", { method: "POST", body });
+    };
+
+    document.getElementById("btnRegister").onclick = () => {
+      const body = {
+        email: document.getElementById("authEmail").value,
+        password: document.getElementById("authPassword").value,
+      };
+      apiCall("POST /auth/register", "/auth/register", { method: "POST", body });
+    };
+
+    document.getElementById("btnLogin").onclick = async () => {
+      const body = {
+        email: document.getElementById("authEmail").value,
+        password: document.getElementById("authPassword").value,
+      };
+      const { res, payload } = await apiCall("POST /auth/login", "/auth/login", { method: "POST", body });
+      if (res.ok) {
+        accessToken = payload.access_token || "";
+        refreshToken = payload.refresh_token || "";
+        localStorage.setItem("access_token", accessToken);
+        localStorage.setItem("refresh_token", refreshToken);
+        updateTokenInfo();
+      }
+    };
+
+    document.getElementById("btnRefresh").onclick = async () => {
+      const body = { refresh_token: refreshToken };
+      const { res, payload } = await apiCall("POST /auth/refresh", "/auth/refresh", { method: "POST", body });
+      if (res.ok) {
+        accessToken = payload.access_token || "";
+        localStorage.setItem("access_token", accessToken);
+        updateTokenInfo();
+      }
+    };
+
+    document.getElementById("btnCreateAlert").onclick = () => {
+      const condition = document.getElementById("alertCondition").value;
+      const thresholdRaw = document.getElementById("alertThreshold").value;
+
+      const body = {
+        query: document.getElementById("alertQuery").value,
+        condition,
+        interval_minutes: Number(document.getElementById("alertInterval").value),
+        weights: { price: 1.0 },
+      };
+
+      if (condition === "PRICE_BELOW") {
+        body.threshold = Number(thresholdRaw);
+      }
+
+      apiCall("POST /alerts", "/alerts", { method: "POST", body, auth: true });
+    };
+
+    document.getElementById("btnListAlerts").onclick = () => {
+      apiCall("GET /alerts", "/alerts", { method: "GET", auth: true });
+    };
+
+    document.getElementById("btnDeleteAlert").onclick = () => {
+      const alertId = document.getElementById("alertIdDelete").value.trim();
+      if (!alertId) {
+        writeLog("DELETE /alerts/{id}", 400, { detail: "Ingresa un alert ID" });
+        return;
+      }
+      apiCall("DELETE /alerts/{id}", `/alerts/${alertId}`, { method: "DELETE", auth: true });
+    };
+
+    updateTokenInfo();
+    writeLog("UI Ready", 200, { message: "Usa los botones para probar endpoints" });
+  </script>
+</body>
+</html>
