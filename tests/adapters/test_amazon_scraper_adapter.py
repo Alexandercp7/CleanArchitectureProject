@@ -1,4 +1,5 @@
 import httpx
+import pytest
 from unittest.mock import MagicMock
 
 from adapters.amazon_scraper_adapter import AmazonScraperAdapter
@@ -41,7 +42,7 @@ HTML_NO_MSI = """
 
 
 def make_adapter(html: str) -> AmazonScraperAdapter:
-    mock_client = MagicMock(spec=httpx.Client)
+    mock_client = MagicMock(spec=httpx.AsyncClient)
     mock_client.get.return_value = MagicMock(
         status_code=200,
         text=html,
@@ -50,25 +51,28 @@ def make_adapter(html: str) -> AmazonScraperAdapter:
     return AmazonScraperAdapter(http_client=mock_client)
 
 
-def test_returns_cash_price_from_non_text_price_node():
+@pytest.mark.asyncio
+async def test_returns_cash_price_from_non_text_price_node():
     adapter = make_adapter(HTML_FIXTURE)
-    results = adapter.fetch_raw_products("laptop")
+    results = await adapter.fetch_raw_products("laptop")
 
     assert results[0].fields["cash_price"] == "15999"
 
 
-def test_sets_msi_fields_only_when_text_indicates_sin_intereses():
+@pytest.mark.asyncio
+async def test_sets_msi_fields_only_when_text_indicates_sin_intereses():
     adapter = make_adapter(HTML_FIXTURE)
-    results = adapter.fetch_raw_products("laptop")
+    results = await adapter.fetch_raw_products("laptop")
 
     assert results[0].fields["months_without_interest"] is True
     assert results[0].fields["msi_months"] == 12
     assert results[0].fields["installment_price"] == "1333"
 
 
-def test_does_not_set_msi_fields_when_no_sin_intereses_text():
+@pytest.mark.asyncio
+async def test_does_not_set_msi_fields_when_no_sin_intereses_text():
     adapter = make_adapter(HTML_NO_MSI)
-    results = adapter.fetch_raw_products("laptop")
+    results = await adapter.fetch_raw_products("laptop")
 
     assert results[0].fields["months_without_interest"] is False
     assert results[0].fields["msi_months"] is None

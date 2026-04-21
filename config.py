@@ -94,6 +94,3 @@ class AppConfig:
     scheduler: SchedulerConfig = SchedulerConfig()
     notifier: NotifierConfig = NotifierConfig()
     cors: CorsConfig = CorsConfig()
-
-
-settings = AppConfig()

@@ -18,12 +18,12 @@ class AmazonScraperAdapter(StoreAdapter):
     def source_name(self) -> str:
         return "amazonscraperadapter"
 
-    def __init__(self, http_client: httpx.Client) -> None:
+    def __init__(self, http_client: httpx.AsyncClient) -> None:
         self._http_client = http_client
 
-    def fetch_raw_products(self, query: str) -> list[RawProduct]:
+    async def fetch_raw_products(self, query: str) -> list[RawProduct]:
         url = BASE_URL.format(query=query.replace(" ", "+"))
-        response = self._http_client.get(url, headers=HEADERS)
+        response = await self._http_client.get(url, headers=HEADERS)
         response.raise_for_status()
         return self._parse_products(response.text)
 

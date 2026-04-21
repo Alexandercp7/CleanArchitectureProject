@@ -13,54 +13,46 @@ from sqlalchemy.ext.asyncio import AsyncEngine, async_sessionmaker, create_async
 from adapters.amazon_scraper_adapter import AmazonScraperAdapter
 from adapters.mercadolibre_scraper_adapter import MercadoLibreScraperAdapter
 from alerts.notifier import Notifier
-from alerts.repository import AlertRepository, _Base as AlertBase
+from alerts.repository import AlertRepository
 from alerts.scheduler import AlertScheduler
 from alerts.tracker import AlertTracker
 from api.alert_routes import AlertRouteDependencies, get_alert_dependencies, router as alert_router
 from api.auth_routes import router as auth_router
 from api.search_routes import SearchRouteDependencies, get_search_dependencies, router as search_router
 from auth.service import AuthService
-from auth.user_repository import UserRepository, _Base as UserBase
+from auth.user_repository import UserRepository
+from application.search.search_service import SearchService
 from cache.abstract_cache import AbstractCache
 from cache.redis_cache import RedisCache
-from config import settings
+from config import AppConfig
+from infrastructure.cache.in_memory_cache import InMemoryCache
+from infrastructure.persistence.models.alert_model import AlertBase
+from infrastructure.persistence.models.user_model import UserBase
 from logging_config import configure_logging
 from normalizer.engine import Normalizer
 from normalizer.yaml_mapping_loader import YamlMappingLoader
-from orchestrator import SearchOrchestrator
 from ranker.weighted_scorer import WeightedScorer
-
-
-class _InMemoryCache(AbstractCache):
-    def __init__(self) -> None:
-        self._store: dict[str, object] = {}
-
-    def get(self, key: str):
-        return self._store.get(key)
-
-    def set(self, key: str, value, ttl_seconds: int) -> None:
-        self._store[key] = value
 
 
 @dataclass
 class AppDependencies:
     auth_service: AuthService
     alert_repository: AlertRepository
-    orchestrator: SearchOrchestrator
+    orchestrator: SearchService
     scheduler: AlertScheduler | None
     httpx_client: httpx.AsyncClient
     database_engine: AsyncEngine
     redis_client: Redis | None
 
 
-def _assert_safe_to_start() -> None:
+def _assert_safe_to_start(settings: AppConfig) -> None:
     if settings.cors.allow_credentials and "*" in settings.cors.allow_methods:
         raise RuntimeError("CORS cannot allow credentials with wildcard methods")
     if settings.cors.allow_credentials and "*" in settings.cors.allow_headers:
         raise RuntimeError("CORS cannot allow credentials with wildcard headers")
 
 
-def _create_database_engine() -> AsyncEngine:
+def _create_database_engine(settings: AppConfig) -> AsyncEngine:
     engine_kwargs = {"echo": settings.database.echo_sql}
 
     # Why: SQLite does not support pool_size/max_overflow options.
@@ -71,30 +63,31 @@ def _create_database_engine() -> AsyncEngine:
     return create_async_engine(settings.database.url, **engine_kwargs)
 
 
-def _create_redis_client() -> Redis | None:
+def _create_redis_client(settings: AppConfig) -> Redis | None:
     if not settings.redis.enabled:
         return None
     return Redis.from_url(settings.redis.url, decode_responses=False)
 
 
-def _create_orchestrator(cache: AbstractCache) -> SearchOrchestrator:
+def _create_orchestrator(cache: AbstractCache) -> SearchService:
     adapters = [
-        AmazonScraperAdapter(http_client=httpx.Client(timeout=10.0, follow_redirects=True)),
-        MercadoLibreScraperAdapter(http_client=httpx.Client(timeout=10.0, follow_redirects=True)),
+        AmazonScraperAdapter(http_client=httpx.AsyncClient(timeout=10.0, follow_redirects=True)),
+        MercadoLibreScraperAdapter(http_client=httpx.AsyncClient(timeout=10.0, follow_redirects=True)),
     ]
     normalizer = Normalizer(mapping_loader=YamlMappingLoader(mappings_dir=Path("normalizer/mappings")))
-    return SearchOrchestrator(adapters=adapters, normalizer=normalizer, ranker=WeightedScorer(), cache=cache)
+    return SearchService(adapters=adapters, normalizer=normalizer, ranker=WeightedScorer(), cache=cache)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    settings = AppConfig()
     configure_logging()
-    _assert_safe_to_start()
+    _assert_safe_to_start(settings)
 
-    engine = _create_database_engine()
+    engine = _create_database_engine(settings)
     session_factory = async_sessionmaker(bind=engine, expire_on_commit=False)
-    redis_client = _create_redis_client()
-    cache: AbstractCache = RedisCache(redis_client) if redis_client is not None else _InMemoryCache()
+    redis_client = _create_redis_client(settings)
+    cache: AbstractCache = RedisCache(redis_client) if redis_client is not None else InMemoryCache()
     orchestrator = _create_orchestrator(cache)
 
     user_repo = UserRepository(session_factory)
@@ -142,6 +135,7 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
+    settings = AppConfig()
     app = FastAPI(title="Search Orchestrator API", lifespan=lifespan)
     app.add_middleware(
         CORSMiddleware,

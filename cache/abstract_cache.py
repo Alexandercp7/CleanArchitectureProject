@@ -1,5 +1,5 @@
 from abc import ABC, abstractmethod
-from domain.product.product import Product
+from domain.product import Product
 
 
 class AbstractCache(ABC):

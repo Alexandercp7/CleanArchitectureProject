@@ -8,13 +8,13 @@ from alerts.evaluation import EvaluationResult
 from alerts.notifier import Notifier
 from alerts.repository import AlertRepository
 from alerts.tracker import AlertTracker
-from orchestrator import SearchOrchestrator, SearchRequest
+from application.search.search_service import SearchRequest, SearchService
 
 
 class AlertScheduler:
     def __init__(
         self,
-        orchestrator: SearchOrchestrator,
+        orchestrator: SearchService,
         repo: AlertRepository,
         tracker: AlertTracker,
         notifier: Notifier,
@@ -56,7 +56,7 @@ class AlertScheduler:
 
     async def _evaluate_alert(self, alert) -> EvaluationResult:
         search_request = SearchRequest(query=alert.query, weights=alert.weights)
-        products = await asyncio.to_thread(self._orchestrator.search_and_rank, search_request)
+        products = await self._orchestrator.search_and_rank(search_request)
         result = self._tracker.evaluate(alert=alert, products=products)
         if result.condition_met and not result.has_error():
             await self._notifier.notify(alert=alert, products=products)

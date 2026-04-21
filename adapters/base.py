@@ -17,5 +17,5 @@ class StoreAdapter(ABC):
         ...
 
     @abstractmethod
-    def fetch_raw_products(self, query: str) -> list[RawProduct]:
+    async def fetch_raw_products(self, query: str) -> list[RawProduct]:
         ...

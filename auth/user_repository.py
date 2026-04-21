@@ -4,30 +4,18 @@ from collections.abc import Callable
 from datetime import datetime, timezone
 from uuid import uuid4
 
-from sqlalchemy import Boolean, DateTime, String, select
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 
 from domain.user import User
+from infrastructure.persistence.models.user_model import UserBase, UserRow
 
 
 class UserRepositoryError(Exception):
     pass
 
 
-class _Base(DeclarativeBase):
-    pass
-
-
-class UserRow(_Base):
-    __tablename__ = "users"
-
-    id: Mapped[str] = mapped_column(String(64), primary_key=True)
-    email: Mapped[str] = mapped_column(String(320), unique=True, index=True)
-    hashed_password: Mapped[str] = mapped_column(String(255))
-    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
-    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+_Base = UserBase
 
 
 SessionFactory = Callable[[], AsyncSession]
@@ -74,5 +62,6 @@ class UserRepository:
             id=row.id,
             email=row.email,
             hashed_password=row.hashed_password,
+            role="user",
             is_active=row.is_active,
         )

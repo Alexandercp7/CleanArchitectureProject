@@ -29,7 +29,7 @@ class FakeRepo:
 
 
 class FakeOrchestrator:
-    def search_and_rank(self, request):
+    async def search_and_rank(self, request):
         return []
 
 

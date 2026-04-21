@@ -1,6 +1,6 @@
 from unittest.mock import MagicMock
 from adapters.base import RawProduct
-from domain.product.product import Product
+from domain.product import Product
 from normalizer.engine import Normalizer
 from normalizer.mapping_loader import MappingLoader
 

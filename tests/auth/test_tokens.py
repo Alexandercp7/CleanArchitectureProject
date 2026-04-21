@@ -3,13 +3,15 @@ import time
 import jwt
 import pytest
 
-from auth.tokens import (
-    ExpiredTokenError,
+from auth.token_service import (
     InMemoryRefreshTokenStore,
-    InvalidTokenError,
-    ReplayDetectedError,
     TokenService,
     TokenSettings,
+)
+from auth.tokens import (
+    ExpiredTokenError,
+    InvalidTokenError,
+    ReplayDetectedError,
 )
 
 

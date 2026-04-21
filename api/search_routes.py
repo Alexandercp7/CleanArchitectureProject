@@ -5,7 +5,7 @@ from dataclasses import dataclass
 from fastapi import APIRouter, Depends, HTTPException, Response
 from pydantic import BaseModel, Field
 
-from orchestrator import SearchOrchestrator, SearchRequest
+from application.search.search_service import SearchService
 
 router = APIRouter(tags=["search"])
 
@@ -33,7 +33,7 @@ class ProductResponse(BaseModel):
 
 @dataclass(frozen=True)
 class SearchRouteDependencies:
-    orchestrator: SearchOrchestrator
+    orchestrator: SearchService
 
 
 def get_search_dependencies() -> SearchRouteDependencies:
@@ -46,7 +46,7 @@ def health_check() -> dict[str, str]:
 
 
 @router.post("/search", response_model=list[ProductResponse])
-def search(
+async def search(
     body: SearchRequestBody,
     response: Response,
     deps: SearchRouteDependencies = Depends(get_search_dependencies),
@@ -55,8 +55,6 @@ def search(
     if not query:
         raise HTTPException(status_code=400, detail="Query cannot be empty")
 
-    products, from_cache = deps.orchestrator.search_and_rank_with_cache_status(
-        SearchRequest(query=query, weights=body.weights)
-    )
+    products, from_cache = await deps.orchestrator.search(query=query, weights=body.weights)
     response.headers["X-Cache"] = "HIT" if from_cache else "MISS"
     return [ProductResponse(**vars(product)) for product in products]
