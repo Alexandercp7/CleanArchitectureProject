@@ -1,5 +1,5 @@
 from adapters.base import RawProduct
-from domain.product.product import Product
+from domain.product import Product
 from normalizer.mapping_loader import MappingLoader
 
 NOT_SPECIFIED = "Not specified"
@@ -59,7 +59,11 @@ class Normalizer:
         key = field_map.get("in_stock")
         if not key or key not in fields:
             return True
-        return bool(fields[key])
+        raw_value = fields[key]
+        if isinstance(raw_value, bool):
+            return raw_value
+        normalized = str(raw_value).strip().lower()
+        return normalized not in {"false", "0", "no", "out"}
 
     def _extract_msi_months(self, fields: dict, field_map: dict) -> int | None:
         key = field_map.get("msi_months")

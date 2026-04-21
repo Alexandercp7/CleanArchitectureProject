@@ -2,6 +2,7 @@ import httpx
 import re
 import unicodedata
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 from adapters.base import RawProduct, StoreAdapter
 
 BASE_URL = "https://listado.mercadolibre.com.mx/{query}"
@@ -32,13 +33,13 @@ class MercadoLibreScraperAdapter(StoreAdapter):
             if self._is_valid_card(card)
         ]
 
-    def _is_valid_card(self, card) -> bool:
+    def _is_valid_card(self, card: Tag) -> bool:
         return (
             card.select_one("a.poly-component__title") is not None
             and card.select_one("span.andes-money-amount__fraction") is not None
         )
 
-    def _parse_card(self, card) -> RawProduct:
+    def _parse_card(self, card: Tag) -> RawProduct:
         title_tag = card.select_one("a.poly-component__title")
         title = title_tag.text.strip()
         link = title_tag.get("href", "").strip()
@@ -60,20 +61,18 @@ class MercadoLibreScraperAdapter(StoreAdapter):
             },
         )
 
-    def _extract_current_price(self, card) -> str:
+    def _extract_current_price(self, card: Tag) -> str:
         current_price = card.select_one("div.poly-price__current span.andes-money-amount__fraction")
         if current_price is None:
             raise ValueError("Current price not found in poly-price__current")
         return current_price.text.strip()
 
-    def _extract_installment_info(self, card) -> tuple[str | None, bool, int | None]:
+    def _extract_installment_info(self, card: Tag) -> tuple[str | None, bool, int | None]:
         installments = card.select_one("span.poly-price__installments")
         if installments is None:
             return None, False, None
 
-        text = installments.text.strip().lower()
-        normalized_text = unicodedata.normalize("NFKD", text).encode("ascii", "ignore").decode("ascii")
-        normalized_text = " ".join(normalized_text.split())
+        normalized_text = self._normalize_text(installments.text)
 
         months_without_interest = bool(
             re.search(r"\b\d+\s*(?:mes(?:es)?|x)\b.*\bsin interes(?:es)?\b", normalized_text)
@@ -90,7 +89,7 @@ class MercadoLibreScraperAdapter(StoreAdapter):
         installment_price = installment_fraction.text.strip() if installment_fraction else None
         return installment_price, True, msi_months
 
-    def _extract_shipping(self, card) -> str:
+    def _extract_shipping(self, card: Tag) -> str:
         shipping_tag = card.select_one("div.poly-component__shipping")
         return shipping_tag.text.strip() if shipping_tag else "Not specified"
 
@@ -107,3 +106,8 @@ class MercadoLibreScraperAdapter(StoreAdapter):
         if match:
             return int(match.group(1))
         return None
+
+    def _normalize_text(self, value: str) -> str:
+        normalized = unicodedata.normalize("NFKD", value.strip().lower())
+        ascii_value = normalized.encode("ascii", "ignore").decode("ascii")
+        return " ".join(ascii_value.split())

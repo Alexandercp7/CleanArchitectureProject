@@ -1,4 +1,4 @@
-from domain.product.product import Product
+from domain.product import Product
 from ranker.strategy import RankStrategy
 
 
@@ -7,6 +7,9 @@ class WeightedScorer(RankStrategy):
     def score_all(
         self, products: list[Product], weights: dict[str, float]
     ) -> list[Product]:
+        if not products:
+            return []
+
         max_price = max((p.cash_price for p in products), default=1.0)
         max_days = max(
             (p.delivery_days for p in products if p.delivery_days is not None),
@@ -44,5 +47,5 @@ class WeightedScorer(RankStrategy):
 
     def _normalize_delivery_days(self, delivery_days: int | None, max_days: int) -> float:
         if delivery_days is None:
-            return -1.0
+            return 0.0
         return 1.0 - (delivery_days / max_days)

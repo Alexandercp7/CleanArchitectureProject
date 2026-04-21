@@ -4,7 +4,7 @@ from normalizer.engine import Normalizer
 from ranker.strategy import RankStrategy
 from cache.abstract_cache import AbstractCache
 from cache.key_builder import build_cache_key
-from domain.product.product import Product
+from domain.product import Product
 
 DEFAULT_CACHE_TTL = 300
 
@@ -30,24 +30,24 @@ class SearchOrchestrator:
         self._cache = cache
 
     def search_and_rank(self, request: SearchRequest) -> list[Product]:
-        ranked, _ = self.search_and_rank_with_cache_status(request)
-        return ranked
+        ranked_products, _ = self.search_and_rank_with_cache_status(request)
+        return ranked_products
 
     def search_and_rank_with_cache_status(self, request: SearchRequest) -> tuple[list[Product], bool]:
         cache_key = build_cache_key(request.query, request.weights)
 
-        cached = self._cache.get(cache_key)
-        if cached is not None:
-            return cached, True
+        cached_products = self._cache.get(cache_key)
+        if cached_products is not None:
+            return cached_products, True
 
         products = self._collect_products(request.query)
-        ranked = self._ranker.score_all(products, request.weights)
+        ranked_products = self._ranker.score_all(products, request.weights)
 
-        self._cache.set(cache_key, ranked, DEFAULT_CACHE_TTL)
-        return ranked, False
+        self._cache.set(cache_key, ranked_products, DEFAULT_CACHE_TTL)
+        return ranked_products, False
 
     def _collect_products(self, query: str) -> list[Product]:
-        products = []
+        products: list[Product] = []
         for adapter in self._adapters:
             source_name = adapter.source_name
             raw_items = adapter.fetch_raw_products(query)

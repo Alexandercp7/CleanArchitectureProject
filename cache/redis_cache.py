@@ -1,7 +1,7 @@
 import json
 import redis
 from dataclasses import asdict
-from domain.product.product import Product
+from domain.product import Product
 from cache.abstract_cache import AbstractCache
 
 DEFAULT_TTL = 300
@@ -16,7 +16,8 @@ class RedisCache(AbstractCache):
         raw = self._client.get(key)
         if raw is None:
             return None
-        return [Product(**item) for item in json.loads(raw)]
+        decoded = raw.decode("utf-8") if isinstance(raw, bytes) else raw
+        return [Product(**item) for item in json.loads(decoded)]
 
     def set(self, key: str, value: list[Product], ttl_seconds: int = DEFAULT_TTL) -> None:
         self._client.setex(key, ttl_seconds, json.dumps([asdict(p) for p in value]))

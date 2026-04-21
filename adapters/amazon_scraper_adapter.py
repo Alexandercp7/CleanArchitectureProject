@@ -2,6 +2,7 @@ import re
 import httpx
 import unicodedata
 from bs4 import BeautifulSoup
+from bs4.element import Tag
 from adapters.base import RawProduct, StoreAdapter
 
 BASE_URL = "https://www.amazon.com.mx/s?k={query}"
@@ -35,13 +36,13 @@ class AmazonScraperAdapter(StoreAdapter):
             if self._is_valid_card(card)
         ]
 
-    def _is_valid_card(self, card) -> bool:
+    def _is_valid_card(self, card: Tag) -> bool:
         return (
             card.select_one("h2 span") is not None
             and card.select_one("span.a-offscreen") is not None
         )
 
-    def _parse_card(self, card) -> RawProduct:
+    def _parse_card(self, card: Tag) -> RawProduct:
         title = self._extract_title(card)
         cash_price = self._extract_cash_price(card)
         installment_price, msi_months = self._extract_installments(card)
@@ -62,26 +63,24 @@ class AmazonScraperAdapter(StoreAdapter):
             },
         )
 
-    def _extract_title(self, card) -> str:
+    def _extract_title(self, card: Tag) -> str:
         tag = card.select_one("h2 span")
         return tag.text.strip() if tag else "Not specified"
 
-    def _extract_cash_price(self, card) -> str:
+    def _extract_cash_price(self, card: Tag) -> str:
         tag = card.select_one("span.a-price:not(.a-text-price) span.a-offscreen")
         if tag is None:
             tag = card.select_one("span.a-offscreen")
         return tag.text.strip().replace("$", "").replace(",", "") if tag else "0"
 
-    def _extract_installments(self, card) -> tuple[str | None, int | None]:
+    def _extract_installments(self, card: Tag) -> tuple[str | None, int | None]:
         installment_tag = card.select_one("span.a-price.a-text-price span.a-offscreen")
         months_tag = card.select_one("span.a-size-base.a-color-secondary")
 
         if not installment_tag or not months_tag:
             return None, None
 
-        months_text = months_tag.text.strip().lower()
-        normalized_text = unicodedata.normalize("NFKD", months_text).encode("ascii", "ignore").decode("ascii")
-        normalized_text = " ".join(normalized_text.split())
+        normalized_text = self._normalize_text(months_tag.text)
 
         if "sin interes" not in normalized_text:
             return None, None
@@ -93,13 +92,12 @@ class AmazonScraperAdapter(StoreAdapter):
         installment_price = installment_tag.text.strip().replace("$", "").replace(",", "")
         return installment_price, int(match.group(1))
 
-    def _extract_delivery_days(self, card) -> int | None:
+    def _extract_delivery_days(self, card: Tag) -> int | None:
         delivery_tag = card.select_one("div.udm-primary-delivery-message")
         if not delivery_tag:
             return None
 
-        delivery_text = delivery_tag.text.strip().lower()
-        normalized_text = unicodedata.normalize("NFKD", delivery_text).encode("ascii", "ignore").decode("ascii")
+        normalized_text = self._normalize_text(delivery_tag.text)
 
         if "hoy" in normalized_text:
             return 0
@@ -111,9 +109,14 @@ class AmazonScraperAdapter(StoreAdapter):
             return int(match.group(1))
         return None
 
-    def _extract_url(self, card) -> str:
+    def _extract_url(self, card: Tag) -> str:
         tag = card.select_one("a.a-link-normal")
         if not tag:
             return ""
         href = tag.get("href", "")
         return f"https://www.amazon.com.mx{href}" if href.startswith("/") else href
+
+    def _normalize_text(self, value: str) -> str:
+        normalized = unicodedata.normalize("NFKD", value.strip().lower())
+        ascii_value = normalized.encode("ascii", "ignore").decode("ascii")
+        return " ".join(ascii_value.split())

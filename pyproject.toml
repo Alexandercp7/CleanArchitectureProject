@@ -10,6 +10,11 @@ dependencies = [
     "redis",
     "fastapi",
     "uvicorn",
+    "pyjwt",
+    "sqlalchemy>=2.0",
+    "aiosqlite",
+    "bcrypt",
+    "pydantic[email]",
 ]
 
 [project.optional-dependencies]
@@ -21,7 +26,8 @@ dev = [
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["adapters*", "normalizer*", "ranker*", "cache*", "api*", "domain*"]
+include = ["adapters*", "normalizer*", "ranker*", "cache*", "api*", "domain*", "auth*", "alerts*"]
 
 [tool.pytest.ini_options]
 pythonpath = ["."]
+asyncio_mode = "auto"
