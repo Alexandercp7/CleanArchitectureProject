@@ -48,15 +48,15 @@ class RedisConfig:
 
 @dataclass(frozen=True)
 class SchedulerConfig:
-    enabled: bool = _get_bool("SCHEDULER_ENABLED", False)
+    enabled: bool = _get_bool("SCHEDULER_ENABLED", True)
     tick_interval_seconds: int = _get_int("SCHEDULER_TICK_SECONDS", 30)
 
 
 @dataclass(frozen=True)
 class NotifierConfig:
-    enabled: bool = _get_bool("NOTIFIER_ENABLED", False)
-    endpoint_url: str = os.getenv("NOTIFIER_ENDPOINT_URL", "")
-    api_key: str = os.getenv("NOTIFIER_API_KEY", "")
+    enabled: bool = _get_bool("NOTIFIER_ENABLED", True)
+    endpoint_url: str = os.getenv("NOTIFIER_ENDPOINT_URL", "http://127.0.0.1:8000")
+    api_key: str = os.getenv("NOTIFIER_API_KEY", "local-dev-key")
 
     def can_send_email(self) -> bool:
         has_credentials = bool(self.endpoint_url and self.api_key)

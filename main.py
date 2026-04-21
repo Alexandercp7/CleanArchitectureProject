@@ -19,6 +19,7 @@ from alerts.scheduler import AlertScheduler
 from alerts.tracker import AlertTracker
 from api.alert_routes import AlertRouteDependencies, get_alert_dependencies, router as alert_router
 from api.auth_routes import router as auth_router
+from api.notification_routes import router as notification_router
 from api.search_routes import SearchRouteDependencies, get_search_dependencies, router as search_router
 from auth.service import AuthService
 from auth.user_repository import UserRepository
@@ -148,6 +149,7 @@ def create_app() -> FastAPI:
     app.include_router(search_router)
     app.include_router(auth_router)
     app.include_router(alert_router)
+    app.include_router(notification_router)
 
     def _provide_search_deps() -> SearchRouteDependencies:
         return SearchRouteDependencies(orchestrator=app.state.deps.orchestrator)
