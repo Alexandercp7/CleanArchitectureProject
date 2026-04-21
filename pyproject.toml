@@ -15,6 +15,7 @@ dependencies = [
     "aiosqlite",
     "bcrypt",
     "pydantic[email]",
+    "alembic",
 ]
 
 [project.optional-dependencies]

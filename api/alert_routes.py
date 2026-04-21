@@ -3,10 +3,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from alerts.repository import AlertRepository, AlertSpec
 from api.dependencies import get_current_user
+from api.weights_validation import validate_weights_payload
 from domain.alert import AlertCondition
 from domain.user import User
 
@@ -28,6 +29,11 @@ class CreateAlertBody(BaseModel):
     interval_minutes: int = Field(gt=0)
     weights: dict[str, float] = Field(default_factory=lambda: {"price": 1.0})
     threshold: float | None = None
+
+    @field_validator("weights")
+    @classmethod
+    def validate_weights(cls, weights: dict[str, float]) -> dict[str, float]:
+        return validate_weights_payload(weights)
 
 
 @router.post("", status_code=status.HTTP_201_CREATED)

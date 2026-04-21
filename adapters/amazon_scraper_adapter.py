@@ -1,9 +1,9 @@
 import re
 import httpx
-import unicodedata
 from bs4 import BeautifulSoup
 from bs4.element import Tag
-from adapters.base import RawProduct, StoreAdapter
+from adapters.utils import normalize_text
+from domain.ports import RawProduct, StoreAdapter
 
 BASE_URL = "https://www.amazon.com.mx/s?k={query}"
 HEADERS = {
@@ -80,7 +80,7 @@ class AmazonScraperAdapter(StoreAdapter):
         if not installment_tag or not months_tag:
             return None, None
 
-        normalized_text = self._normalize_text(months_tag.text)
+        normalized_text = normalize_text(months_tag.text)
 
         if "sin interes" not in normalized_text:
             return None, None
@@ -97,7 +97,7 @@ class AmazonScraperAdapter(StoreAdapter):
         if not delivery_tag:
             return None
 
-        normalized_text = self._normalize_text(delivery_tag.text)
+        normalized_text = normalize_text(delivery_tag.text)
 
         if "hoy" in normalized_text:
             return 0
@@ -116,7 +116,3 @@ class AmazonScraperAdapter(StoreAdapter):
         href = tag.get("href", "")
         return f"https://www.amazon.com.mx{href}" if href.startswith("/") else href
 
-    def _normalize_text(self, value: str) -> str:
-        normalized = unicodedata.normalize("NFKD", value.strip().lower())
-        ascii_value = normalized.encode("ascii", "ignore").decode("ascii")
-        return " ".join(ascii_value.split())

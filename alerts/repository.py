@@ -9,7 +9,8 @@ from sqlalchemy import and_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.alert import Alert, AlertCondition
-from infrastructure.persistence.models.alert_model import AlertBase, AlertRow
+from infrastructure.persistence.base import Base
+from infrastructure.persistence.models.alert_model import AlertRow
 
 
 @dataclass(frozen=True)
@@ -23,7 +24,7 @@ class AlertSpec:
     threshold: float | None = None
 
 
-_Base = AlertBase
+_Base = Base
 
 
 SessionFactory = Callable[[], AsyncSession]

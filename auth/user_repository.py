@@ -8,14 +8,15 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from domain.user import User
-from infrastructure.persistence.models.user_model import UserBase, UserRow
+from infrastructure.persistence.base import Base
+from infrastructure.persistence.models.user_model import UserRow
 
 
 class UserRepositoryError(Exception):
     pass
 
 
-_Base = UserBase
+_Base = Base
 
 
 SessionFactory = Callable[[], AsyncSession]

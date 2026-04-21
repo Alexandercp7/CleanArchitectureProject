@@ -1,14 +1,15 @@
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Float, Index, Integer, String, Text
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
+
+from infrastructure.persistence.base import Base
 
 
-class AlertBase(DeclarativeBase):
-    pass
+AlertBase = Base
 
 
-class AlertRow(AlertBase):
+class AlertRow(Base):
     __tablename__ = "alerts"
     __table_args__ = (
         Index("ix_alerts_active_last_checked", "active", "last_checked_at"),

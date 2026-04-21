@@ -1,21 +1,3 @@
-from abc import ABC, abstractmethod
-from dataclasses import dataclass
-from typing import Any
+from domain.ports import RawProduct, StoreAdapter
 
-
-@dataclass(frozen=True)
-class RawProduct:
-    source_id: str
-    fields: dict[str, Any]
-
-
-class StoreAdapter(ABC):
-
-    @property
-    @abstractmethod
-    def source_name(self) -> str:
-        ...
-
-    @abstractmethod
-    async def fetch_raw_products(self, query: str) -> list[RawProduct]:
-        ...
+__all__ = ["RawProduct", "StoreAdapter"]

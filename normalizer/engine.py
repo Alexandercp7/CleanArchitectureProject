@@ -1,4 +1,4 @@
-from adapters.base import RawProduct
+from domain.ports import RawProduct
 from domain.product import Product
 from normalizer.mapping_loader import MappingLoader
 

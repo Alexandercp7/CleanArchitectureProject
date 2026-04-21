@@ -26,8 +26,7 @@ from cache.abstract_cache import AbstractCache
 from cache.redis_cache import RedisCache
 from config import AppConfig
 from infrastructure.cache.in_memory_cache import InMemoryCache
-from infrastructure.persistence.models.alert_model import AlertBase
-from infrastructure.persistence.models.user_model import UserBase
+from infrastructure.persistence.base import Base
 from logging_config import configure_logging
 from normalizer.engine import Normalizer
 from normalizer.yaml_mapping_loader import YamlMappingLoader
@@ -109,8 +108,7 @@ async def lifespan(app: FastAPI):
         scheduler.start()
 
     async with engine.begin() as connection:
-        await connection.run_sync(UserBase.metadata.create_all)
-        await connection.run_sync(AlertBase.metadata.create_all)
+        await connection.run_sync(Base.metadata.create_all)
 
     deps = AppDependencies(
         auth_service=auth_service,

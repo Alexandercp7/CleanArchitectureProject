@@ -1,9 +1,9 @@
 import httpx
 import re
-import unicodedata
 from bs4 import BeautifulSoup
 from bs4.element import Tag
-from adapters.base import RawProduct, StoreAdapter
+from adapters.utils import normalize_text
+from domain.ports import RawProduct, StoreAdapter
 
 BASE_URL = "https://listado.mercadolibre.com.mx/{query}"
 HEADERS = {"User-Agent": "Mozilla/5.0"}
@@ -72,7 +72,7 @@ class MercadoLibreScraperAdapter(StoreAdapter):
         if installments is None:
             return None, False, None
 
-        normalized_text = self._normalize_text(installments.text)
+        normalized_text = normalize_text(installments.text)
 
         months_without_interest = bool(
             re.search(r"\b\d+\s*(?:mes(?:es)?|x)\b.*\bsin interes(?:es)?\b", normalized_text)
@@ -107,7 +107,3 @@ class MercadoLibreScraperAdapter(StoreAdapter):
             return int(match.group(1))
         return None
 
-    def _normalize_text(self, value: str) -> str:
-        normalized = unicodedata.normalize("NFKD", value.strip().lower())
-        ascii_value = normalized.encode("ascii", "ignore").decode("ascii")
-        return " ".join(ascii_value.split())

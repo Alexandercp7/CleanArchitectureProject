@@ -1,14 +1,15 @@
 from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, String
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column
+
+from infrastructure.persistence.base import Base
 
 
-class UserBase(DeclarativeBase):
-    pass
+UserBase = Base
 
 
-class UserRow(UserBase):
+class UserRow(Base):
     __tablename__ = "users"
 
     id: Mapped[str] = mapped_column(String(64), primary_key=True)

@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 import logging
 from collections.abc import Awaitable
+from datetime import datetime, timedelta, timezone
 
 from alerts.evaluation import EvaluationResult
 from alerts.notifier import Notifier
@@ -48,11 +49,19 @@ class AlertScheduler:
 
     async def _tick(self) -> None:
         active_alerts = await self._repo.get_active()
+        due_alerts = [alert for alert in active_alerts if self._is_due_for_evaluation(alert)]
         evaluations = await asyncio.gather(
-            *(self._evaluate_alert(alert) for alert in active_alerts),
+            *(self._evaluate_alert(alert) for alert in due_alerts),
             return_exceptions=True,
         )
         await self._persist_evaluations(evaluations)
+
+    def _is_due_for_evaluation(self, alert) -> bool:
+        if alert.last_checked_at is None:
+            return True
+
+        next_check_at = alert.last_checked_at + timedelta(minutes=alert.interval_minutes)
+        return datetime.now(tz=timezone.utc) >= next_check_at
 
     async def _evaluate_alert(self, alert) -> EvaluationResult:
         search_request = SearchRequest(query=alert.query, weights=alert.weights)

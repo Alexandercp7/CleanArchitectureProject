@@ -1,4 +1,5 @@
 from datetime import datetime, timezone
+from datetime import timedelta
 
 import pytest
 
@@ -51,6 +52,35 @@ async def test_tick_persists_evaluation() -> None:
     await scheduler._tick()
 
     assert repo.last[0] == "a1"
+
+
+@pytest.mark.asyncio
+async def test_tick_skips_alert_when_interval_not_elapsed() -> None:
+    alert = Alert(
+        id="a2",
+        user_id="u1",
+        user_email="u@example.com",
+        query="laptop",
+        condition=AlertCondition.IN_STOCK,
+        threshold=None,
+        weights={"price": 1.0},
+        interval_minutes=15,
+        active=True,
+        created_at=datetime.now(tz=timezone.utc),
+        last_checked_at=datetime.now(tz=timezone.utc) - timedelta(minutes=5),
+    )
+
+    repo = FakeRepo()
+
+    async def _get_active_override():
+        return [alert]
+
+    repo.get_active = _get_active_override  # type: ignore[method-assign]
+
+    scheduler = AlertScheduler(FakeOrchestrator(), repo, FakeTracker(), FakeNotifier())
+    await scheduler._tick()
+
+    assert not hasattr(repo, "last")
 
 
 def test_start_requires_running_event_loop() -> None:

@@ -1,9 +1,9 @@
 from unittest.mock import AsyncMock, MagicMock
 import pytest
-from adapters.base import StoreAdapter, RawProduct
 from normalizer.engine import Normalizer
 from ranker.strategy import RankStrategy
 from cache.abstract_cache import AbstractCache
+from domain.ports import RawProduct, StoreAdapter
 from domain.product import Product
 from application.search.search_service import SearchRequest, SearchService
 
@@ -132,3 +132,38 @@ async def test_returns_cache_miss_status_when_result_comes_from_web():
 
     assert from_cache is False
     assert result[0].title == "Web laptop"
+
+
+@pytest.mark.asyncio
+async def test_continues_with_other_adapters_when_one_fails() -> None:
+    failing_adapter = MagicMock(spec=StoreAdapter)
+    failing_adapter.source_name = "amazonscraperadapter"
+    failing_adapter.fetch_raw_products = AsyncMock(side_effect=RuntimeError("boom"))
+
+    working_adapter = MagicMock(spec=StoreAdapter)
+    working_adapter.source_name = "mercadolibrescraperadapter"
+    working_adapter.fetch_raw_products = AsyncMock(
+        return_value=[RawProduct(source_id="1", fields={"title": "Laptop", "cash_price": "1000"})]
+    )
+
+    normalizer = MagicMock(spec=Normalizer)
+    normalizer.normalize_to_product.return_value = make_product(title="Recovered laptop")
+
+    ranker = MagicMock(spec=RankStrategy)
+    ranker.score_all.side_effect = lambda products, _weights: products
+
+    cache = MagicMock(spec=AbstractCache)
+    cache.get.return_value = None
+
+    orchestrator = SearchService(
+        adapters=[failing_adapter, working_adapter],
+        normalizer=normalizer,
+        ranker=ranker,
+        cache=cache,
+    )
+
+    result, from_cache = await orchestrator.search(query="laptop", weights={"price": 1.0})
+
+    assert from_cache is False
+    assert len(result) == 1
+    assert result[0].title == "Recovered laptop"

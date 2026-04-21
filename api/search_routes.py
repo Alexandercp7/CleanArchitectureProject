@@ -3,8 +3,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from fastapi import APIRouter, Depends, HTTPException, Response
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
+from api.weights_validation import validate_weights_payload
 from application.search.search_service import SearchService
 
 router = APIRouter(tags=["search"])
@@ -18,6 +19,11 @@ class SearchRequestBody(BaseModel):
         "in_stock": 0.2,
         "delivery_days": 0.0,
     }
+
+    @field_validator("weights")
+    @classmethod
+    def validate_weights(cls, weights: dict[str, float]) -> dict[str, float]:
+        return validate_weights_payload(weights)
 
 
 class ProductResponse(BaseModel):
